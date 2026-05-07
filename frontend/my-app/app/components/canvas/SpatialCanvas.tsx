@@ -10,19 +10,13 @@ export interface CanvasUser {
 
 const GRID_SIZE = 10;
 
-const MOCK_USERS: CanvasUser[] = [
-  { id: "u1", name: "Alice", x: 1, y: 1, color: "bg-sky-500" },
-  { id: "u2", name: "Bob", x: 7, y: 2, color: "bg-emerald-500" },
-  { id: "u3", name: "Carla", x: 3, y: 7, color: "bg-violet-500" },
-  { id: "u4", name: "Diego", x: 8, y: 8, color: "bg-amber-500" },
-];
-
 type SpatialCanvasProps = {
+  users: CanvasUser[];
   currentUserId: string;
   onAvatarClick: (targetUser: CanvasUser) => void;
 };
 
-export default function SpatialCanvas({ currentUserId, onAvatarClick }: SpatialCanvasProps) {
+export default function SpatialCanvas({ users, currentUserId, onAvatarClick }: SpatialCanvasProps) {
   function handleAvatarClick(targetUser: CanvasUser) {
     onAvatarClick(targetUser);
   }
@@ -47,7 +41,7 @@ export default function SpatialCanvas({ currentUserId, onAvatarClick }: SpatialC
           />
         ))}
 
-        {MOCK_USERS.map((user) => {
+        {users.map((user) => {
           const isCurrentUser = user.id === currentUserId;
           return (
             <button
@@ -61,7 +55,7 @@ export default function SpatialCanvas({ currentUserId, onAvatarClick }: SpatialC
                 left: `${((user.x + 0.5) / GRID_SIZE) * 100}%`,
                 top: `${((user.y + 0.5) / GRID_SIZE) * 100}%`,
               }}
-              title={`${isCurrentUser ? "You" : "Join"}: ${user.name}`}
+              title={`${isCurrentUser ? "You" : "Join"}: ${user.name} (room_user_${user.id})`}
             >
               {user.name.slice(0, 2).toUpperCase()}
             </button>

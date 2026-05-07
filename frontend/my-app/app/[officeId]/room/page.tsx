@@ -1,31 +1,42 @@
-"use client";
+import { getOfficeSpatialUsers } from "@/actions/office-actions";
+import type { CanvasUser } from "@/app/components/canvas/SpatialCanvas";
+import SpatialRoomShell from "@/app/components/room/SpatialRoomShell";
 
-import { useState } from "react";
-import SpatialCanvas, { CanvasUser } from "@/app/components/canvas/SpatialCanvas";
-import LiveKitRoomClient from "@/app/components/room/LiveKitRoomClient";
+const AVATAR_COLORS = [
+  "bg-sky-500",
+  "bg-emerald-500",
+  "bg-violet-500",
+  "bg-amber-500",
+  "bg-rose-500",
+  "bg-indigo-500",
+] as const;
 
-const CURRENT_USER = {
-  id: "u1",
-  name: "Alice",
+const GRID_SIZE = 10;
+
+type OfficeSpatialRoomPageProps = {
+  params: Promise<{
+    officeId: string;
+  }>;
 };
 
-export default function OfficeSpatialRoomPage() {
-  const [activeRoom, setActiveRoom] = useState<string | null>(null);
+function mapUsersToCanvas(users: Array<{ id: string; name: string }>): CanvasUser[] {
+  return users.map((user, index) => {
+    const column = index % GRID_SIZE;
+    const row = Math.floor(index / GRID_SIZE) % GRID_SIZE;
+    return {
+      id: user.id,
+      name: user.name,
+      x: column,
+      y: row,
+      color: AVATAR_COLORS[index % AVATAR_COLORS.length],
+    };
+  });
+}
 
-  const handleAvatarClick = (targetUser: CanvasUser) => {
-    setActiveRoom(`room_user_${targetUser.id}`);
-  };
+export default async function OfficeSpatialRoomPage({ params }: OfficeSpatialRoomPageProps) {
+  const { officeId } = await params;
+  const { currentUser, users } = await getOfficeSpatialUsers(officeId);
+  const canvasUsers = mapUsersToCanvas(users);
 
-  return (
-    <main className="vo-shell vo-grid min-h-screen px-5 pb-10 pt-24 sm:px-8">
-      <section className="mx-auto grid w-full max-w-7xl gap-6 lg:grid-cols-[1.1fr_1fr]">
-        <SpatialCanvas currentUserId={CURRENT_USER.id} onAvatarClick={handleAvatarClick} />
-        <LiveKitRoomClient
-          currentUserName={CURRENT_USER.name}
-          activeRoomName={activeRoom}
-          onLeave={() => setActiveRoom(null)}
-        />
-      </section>
-    </main>
-  );
+  return <SpatialRoomShell currentUser={currentUser} users={canvasUsers} />;
 }
