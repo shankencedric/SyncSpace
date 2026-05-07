@@ -53,6 +53,12 @@ export async function authWithGoogle() {
   const cookieStore = await cookies()
   const supabase = createClient(cookieStore)
 
+  console.log({
+    VERCEL_URL: process.env.VERCEL_URL,
+    VERCEL_URL_FALLBACK: process.env.VERCEL_URL_FALLBACK,
+    WORKING: getWorkingUrl_Vercel()
+  });
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
