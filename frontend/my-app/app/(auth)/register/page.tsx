@@ -65,14 +65,29 @@ function CheckIcon() {
     );
 }
 
+function ErrorBox() {
+  const searchParams = useSearchParams();
+  const errorMessage = useMemo(() => searchParams.get("error"), [searchParams]);
+
+  return (
+    <>
+        {errorMessage ? (
+            <div
+                className="mt-6 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200"
+                role="alert"
+            >
+                {errorMessage}
+            </div>
+        ) : null}
+    </>
+  );
+}
+
 export default function RegisterPage() {
-    const searchParams = useSearchParams();
-    const errorMessage = useMemo(() => searchParams.get("error"), [searchParams]);
     const [showPassword, setShowPassword] = useState(false);
 
     return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <main className="vo-shell vo-grid min-h-screen px-5 py-6 text-[var(--text-primary)] sm:px-8 lg:p-0">
+        <main className="vo-shell vo-grid min-h-screen px-5 py-6 text-[var(--text-primary)] sm:px-8 lg:p-0">
             <div className="mx-auto grid min-h-[calc(100vh-48px)] w-full max-w-7xl overflow-hidden rounded-3xl border border-[var(--border-base)] bg-[rgba(8,12,20,0.78)] shadow-[var(--shadow-hero)] backdrop-blur-xl lg:min-h-screen lg:grid-cols-[45fr_55fr] lg:rounded-none lg:border-0">
                 <section className="relative hidden overflow-hidden border-r border-[var(--border-base)] p-10 lg:flex lg:flex-col lg:justify-between">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_18%,rgba(144,221,240,0.18),transparent_32%)]" />
@@ -120,79 +135,74 @@ export default function RegisterPage() {
                 </section>
 
                 <section className="flex items-center justify-center px-5 py-12 sm:px-8 lg:px-16">
-                <div className="w-full max-w-md">
-                    <Link href="/" className="mb-10 inline-flex items-center gap-3 font-[var(--font-brand)] text-xl font-bold tracking-[-0.04em] lg:hidden">
-                    <span className="h-3 w-3 rounded-full bg-[var(--accent)]" />
-                    VirtualOffice
-                    </Link>
+                    <div className="w-full max-w-md">
+                        <Link href="/" className="mb-10 inline-flex items-center gap-3 font-[var(--font-brand)] text-xl font-bold tracking-[-0.04em] lg:hidden">
+                        <span className="h-3 w-3 rounded-full bg-[var(--accent)]" />
+                        VirtualOffice
+                        </Link>
 
-                    <p className="font-[var(--font-ui-mono)] text-xs uppercase tracking-[0.22em] text-[var(--accent)]">
-                    Create account
-                    </p>
-                    <h2 className="mt-3 font-[var(--font-serif)] text-4xl font-bold leading-tight tracking-[-0.04em]">
-                    Set up your virtual office.
-                    </h2>
+                        <p className="font-[var(--font-ui-mono)] text-xs uppercase tracking-[0.22em] text-[var(--accent)]">
+                        Create account
+                        </p>
+                        <h2 className="mt-3 font-[var(--font-serif)] text-4xl font-bold leading-tight tracking-[-0.04em]">
+                        Set up your virtual office.
+                        </h2>
 
-                    {errorMessage ? (
-                        <div
-                        className="mt-6 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200"
-                        role="alert"
-                        >
-                        {errorMessage}
-                        </div>
-                    ) : null}
+                        <Suspense fallback={<></>}>
+                            <ErrorBox />
+                        </Suspense>
 
-                    <form action={register} className="mt-6 space-y-5">
-                    <label className="block">
-                        <span className="mb-2 block text-sm font-semibold text-[var(--text-secondary)]">Full name</span>
-                        <input
-                        type="text"
-                        name="name"
-                        placeholder="Juan Dela Cruz"
-                        required
-                        className="h-11 w-full rounded-xl border border-[var(--border-base)] bg-[rgba(15,23,42,0.5)] px-4 text-sm text-white placeholder:text-[var(--text-faint)] focus:border-[var(--accent)] focus:outline-none focus:ring-4 focus:ring-[var(--accent-glow)]"
-                        />
-                    </label>
-                    <label className="block">
-                        <span className="mb-2 block text-sm font-semibold text-[var(--text-secondary)]">Work email</span>
-                        <input
-                        type="email"
-                        name="email"
-                        placeholder="you@company.com"
-                        required
-                        className="h-11 w-full rounded-xl border border-[var(--border-base)] bg-[rgba(15,23,42,0.5)] px-4 text-sm text-white placeholder:text-[var(--text-faint)] focus:border-[var(--accent)] focus:outline-none focus:ring-4 focus:ring-[var(--accent-glow)]"
-                        />
-                    </label>
-                    <label className="block">
-                        <span className="mb-2 block text-sm font-semibold text-[var(--text-secondary)]">Password</span>
-                        <span className="flex h-11 items-center rounded-xl border border-[var(--border-base)] bg-[rgba(15,23,42,0.5)] focus-within:border-[var(--accent)] focus-within:ring-4 focus-within:ring-[var(--accent-glow)]">
-                        <input
-                            type={showPassword ? "text" : "password"}
-                            name="password"
-                            placeholder="Create a password"
-                            required
-                            className="h-full min-w-0 flex-1 bg-transparent px-4 text-sm text-white placeholder:text-[var(--text-faint)] focus:outline-none"
-                        />
-                        <button
-                            type="button"
-                            aria-label={showPassword ? "Hide password" : "Show password"}
-                            onClick={() => setShowPassword((current) => !current)}
-                            className="mr-3 rounded-lg p-1.5 text-[var(--text-tertiary)] hover:bg-[var(--accent-soft)] hover:text-white"
-                        >
-                            <EyeIcon />
-                        </button>
-                        </span>
-                    </label>
+                        <form action={register} className="mt-6 space-y-5">
+                            <label className="block">
+                                <span className="mb-2 block text-sm font-semibold text-[var(--text-secondary)]">Full name</span>
+                                <input
+                                type="text"
+                                name="name"
+                                placeholder="Juan Dela Cruz"
+                                required
+                                className="h-11 w-full rounded-xl border border-[var(--border-base)] bg-[rgba(15,23,42,0.5)] px-4 text-sm text-white placeholder:text-[var(--text-faint)] focus:border-[var(--accent)] focus:outline-none focus:ring-4 focus:ring-[var(--accent-glow)]"
+                                />
+                            </label>
+                            <label className="block">
+                                <span className="mb-2 block text-sm font-semibold text-[var(--text-secondary)]">Work email</span>
+                                <input
+                                type="email"
+                                name="email"
+                                placeholder="you@company.com"
+                                required
+                                className="h-11 w-full rounded-xl border border-[var(--border-base)] bg-[rgba(15,23,42,0.5)] px-4 text-sm text-white placeholder:text-[var(--text-faint)] focus:border-[var(--accent)] focus:outline-none focus:ring-4 focus:ring-[var(--accent-glow)]"
+                                />
+                            </label>
+                            <label className="block">
+                                <span className="mb-2 block text-sm font-semibold text-[var(--text-secondary)]">Password</span>
+                                <span className="flex h-11 items-center rounded-xl border border-[var(--border-base)] bg-[rgba(15,23,42,0.5)] focus-within:border-[var(--accent)] focus-within:ring-4 focus-within:ring-[var(--accent-glow)]">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    name="password"
+                                    placeholder="Create a password"
+                                    required
+                                    className="h-full min-w-0 flex-1 bg-transparent px-4 text-sm text-white placeholder:text-[var(--text-faint)] focus:outline-none"
+                                />
+                                <button
+                                    type="button"
+                                    aria-label={showPassword ? "Hide password" : "Show password"}
+                                    onClick={() => setShowPassword((current) => !current)}
+                                    className="mr-3 rounded-lg p-1.5 text-[var(--text-tertiary)] hover:bg-[var(--accent-soft)] hover:text-white"
+                                >
+                                    <EyeIcon />
+                                </button>
+                                </span>
+                            </label>
 
-                    <label className="flex items-start gap-3 text-sm leading-6 text-[var(--text-tertiary)]">
-                        <input type="checkbox" className="mt-1 h-4 w-4 rounded border-[var(--border-base)] accent-[var(--accent)]" />
-                        I agree to the Terms of Service and Privacy Policy.
-                    </label>
+                            <label className="flex items-start gap-3 text-sm leading-6 text-[var(--text-tertiary)]">
+                                <input type="checkbox" className="mt-1 h-4 w-4 rounded border-[var(--border-base)] accent-[var(--accent)]" />
+                                I agree to the Terms of Service and Privacy Policy.
+                            </label>
 
-                    <button type="submit" className="vo-button-primary h-12 w-full rounded-xl font-[var(--font-brand)] text-base font-bold text-white">
-                        Create Workspace
-                    </button>
-                    </form>
+                            <button type="submit" className="vo-button-primary h-12 w-full rounded-xl font-[var(--font-brand)] text-base font-bold text-white">
+                                Create Workspace
+                            </button>
+                        </form>
 
                     <div className="mt-4">
                         <form action={authWithGoogle}>
@@ -215,7 +225,6 @@ export default function RegisterPage() {
                 </div>
                 </section>
             </div>
-            </main>
-        </Suspense>
+        </main>
     );
 }

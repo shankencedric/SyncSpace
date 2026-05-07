@@ -44,9 +44,25 @@ function EyeIcon() {
     );
 }
 
+function ErrorBox() {
+  const searchParams = useSearchParams();
+  const errorMessage = useMemo(() => searchParams.get("error"), [searchParams]);
+
+  return (
+    <>
+        {errorMessage ? (
+            <div
+                className="mt-6 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200"
+                role="alert"
+            >
+                {errorMessage}
+            </div>
+        ) : null}
+    </>
+  );
+}
+
 export default function LoginPage() {
-    const searchParams = useSearchParams();
-    const errorMessage = useMemo(() => searchParams.get("error"), [searchParams]);
     const [showPassword, setShowPassword] = useState(false);
 
     return (
@@ -127,14 +143,9 @@ export default function LoginPage() {
                     Log in to your workspace.
                     </h2>
 
-                    {errorMessage ? (
-                        <div
-                        className="mt-6 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200"
-                        role="alert"
-                        >
-                        {errorMessage}
-                        </div>
-                    ) : null}
+                    <Suspense fallback={<></>}>
+                        <ErrorBox />
+                    </Suspense>
 
                     <form action={login} className="mt-6 space-y-5">
                     <label className="block">
