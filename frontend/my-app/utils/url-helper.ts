@@ -3,13 +3,10 @@
  */
 export function getWorkingUrl_Vercel(): string {
     let url = process.env.VERCEL_URL 
-        || process.env.VERCEL_URL_FALLBACK 
-        || 'http://localhost:3000';
     
-    if (process.env.VERCEL_URL )    
-        return `https://${url}`;
+    if (url) return `https://${url}`;
     
-    return url;
+    return process.env.VERCEL_URL_FALLBACK || 'http://localhost:3000';
 }
 
 /**
