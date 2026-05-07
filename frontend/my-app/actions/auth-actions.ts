@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server' 
 import { cookies } from 'next/headers'
+import { getWorkingUrl_Vercel } from '@/utils/url-helper'
 
 export async function login(formData: FormData) {
   const cookieStore = await cookies()
@@ -55,7 +56,7 @@ export async function authWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: process.env.WORKING_URL + `/oauth-callback`, 
+      redirectTo: getWorkingUrl_Vercel() + `/oauth-callback`, 
     },
   })
 

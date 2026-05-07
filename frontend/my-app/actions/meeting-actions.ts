@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
+import { getWorkingUrl_LiveKit } from '@/utils/url-helper'
 
 type TokenResponse = {
   token?: string
@@ -44,7 +45,7 @@ export async function getLiveKitToken(roomName: string, participantName: string)
     throw new Error('Room name and participant name are required.')
   }
 
-  const tokenApiBase = (process.env.NEXT_PUBLIC_TOKEN_API_URL ?? 'http://localhost:8000')
+  const tokenApiBase = getWorkingUrl_LiveKit()
     .trim()
     .replace(/\/+$/, '')
 
