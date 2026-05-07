@@ -1,8 +1,45 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { LiveKitRoom, RoomAudioRenderer, VideoConference } from "@livekit/components-react";
+import {
+  LiveKitRoom,
+  RoomAudioRenderer,
+  useParticipants,
+  VideoTrack,
+} from "@livekit/components-react";
+import { Track } from "livekit-client";
 import { getLiveKitToken } from "@/actions/meeting-actions";
+
+/* ---------------- ROOM GRID ---------------- */
+
+function RoomGrid() {
+  const participants = useParticipants();
+
+  return (
+    <div className="grid h-full grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {participants.map((p) => (
+        <div
+          key={p.identity}
+          className="relative overflow-hidden rounded-xl border border-(--border-base) bg-black"
+        >
+          {/* VIDEO */}
+          <VideoTrack
+            participant={p}
+            source={Track.Source.Camera}
+            className="h-full w-full object-cover"
+          />
+
+          {/* NAME TAG */}
+          <div className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-1 text-xs text-white">
+            {p.name || p.identity}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ---------------- MAIN COMPONENT ---------------- */
 
 type LiveKitRoomClientProps = {
   currentUserName: string;
@@ -27,135 +64,115 @@ export default function LiveKitRoomClient({
 
   const leaveRoom = () => {
     setToken(null);
-    setStatusMessage("Disconnected from room.");
     setError(null);
+    setStatusMessage("Disconnected.");
     onLeave();
   };
 
   useEffect(() => {
-    if (activeRoomName === null) {
+    if (!activeRoomName) {
       setToken(null);
-      setError(null);
-      setStatusMessage("Select an avatar to join a bubble room.");
+      setStatusMessage("Select a room to join.");
       return;
     }
 
-    const roomName = activeRoomName;
-    let isCancelled = false;
+    let cancelled = false;
 
-    async function connectToActiveRoom(room: string, participantName: string) {
-      if (!liveKitUrl) {
-        setError("Missing NEXT_PUBLIC_LIVEKIT_URL in env.local.");
-        return;
-      }
-
-      if (!activeRoomName) {
-        setError("Room name is required.");
-        return;
-      }
-
+    async function connect() {
       setIsConnecting(true);
       setError(null);
-      setStatusMessage(`Connecting to ${room}...`);
+      setStatusMessage(`Joining ${activeRoomName}...`);
 
       try {
-        const payload = await getLiveKitToken(room, participantName);
-        if (isCancelled) {
-          return;
+        const { token } = await getLiveKitToken(
+          activeRoomName,
+          currentUserName,
+        );
+
+        if (!cancelled) {
+          setToken(token);
+          setStatusMessage(`Connected as ${currentUserName}`);
         }
-        setToken(payload.token);
-        setStatusMessage(`Connected as ${participantName} in ${room}.`);
-      } catch (connectError) {
-        if (isCancelled) {
-          return;
+      } catch (err) {
+        if (!cancelled) {
+          setError("Failed to connect to room.");
+          setToken(null);
         }
-        const message =
-          connectError instanceof Error ? connectError.message : "Could not connect to LiveKit.";
-        setError(message);
-        setStatusMessage(null);
-        setToken(null);
       } finally {
-        if (!isCancelled) {
-          setIsConnecting(false);
-        }
+        if (!cancelled) setIsConnecting(false);
       }
     }
 
-    void connectToActiveRoom(roomName, currentUserName);
+    connect();
 
     return () => {
-      isCancelled = true;
+      cancelled = true;
     };
-  }, [activeRoomName, currentUserName, liveKitUrl]);
+  }, [activeRoomName, currentUserName]);
+
+  /* ---------------- UI ---------------- */
 
   if (!activeRoomName) {
     return (
-      <section className="vo-card flex min-h-[420px] items-center justify-center rounded-2xl p-6">
-        <p className="text-sm text-(--text-secondary)">
-          Select a teammate avatar to join their bubble.
+      <div className="flex h-[60vh] items-center justify-center rounded-2xl border border-(--border-base)">
+        <p className="text-sm text-gray-400">
+          Choose a room to join a live session
         </p>
-      </section>
+      </div>
     );
   }
 
   return (
-    <section className="space-y-4">
-      <div className="vo-card flex items-center justify-between gap-4 rounded-2xl p-4">
-        <p className="text-sm text-(--text-secondary)">
-          Active bubble: <span className="font-semibold text-white">{activeRoomName}</span>
-        </p>
+    <div className="space-y-4">
+
+      {/* HEADER */}
+      <div className="flex items-center justify-between rounded-xl border border-(--border-base) p-4">
+        <div>
+          <p className="text-xs text-gray-400">Active Room</p>
+          <p className="text-lg font-semibold text-white">
+            {activeRoomName}
+          </p>
+        </div>
+
         <button
-          type="button"
           onClick={leaveRoom}
-          className="rounded-lg border border-(--border-base) px-4 py-2 text-sm font-semibold text-(--text-secondary) hover:bg-[rgba(7,57,60,0.25)] hover:text-white"
+          className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
         >
-          Leave Bubble
+          Leave Room
         </button>
       </div>
 
+      {/* CONTENT */}
       {token ? (
-        <div className="overflow-hidden rounded-2xl border border-(--border-base)">
+        <div className="h-[75vh] overflow-hidden rounded-2xl border border-(--border-base) bg-black">
           <LiveKitRoom
             token={token}
             serverUrl={liveKitUrl}
-            connect={true}
-            video={true}
-            audio={true}
-            onMediaDeviceFailure={(deviceFailure) => {
-              setError(`Media device error: ${deviceFailure}`);
-            }}
-            onDisconnected={() => {
-              setToken(null);
-              setStatusMessage("Disconnected from room.");
-              onLeave();
-            }}
-            onError={(liveKitError) => {
-              setError(liveKitError.message);
-            }}
-            className="h-[70vh]"
+            connect
+            video
+            audio
+            className="h-full"
+            onDisconnected={leaveRoom}
+            onError={(e) => setError(e.message)}
           >
-            <VideoConference />
+            <RoomGrid />
             <RoomAudioRenderer />
           </LiveKitRoom>
         </div>
       ) : (
-        <div className="vo-card flex min-h-[420px] items-center justify-center rounded-2xl p-6">
-          <p className="text-sm text-(--text-secondary)">
-            {isConnecting ? "Connecting to bubble..." : "Waiting for connection..."}
+        <div className="flex h-[60vh] items-center justify-center rounded-2xl border border-(--border-base)">
+          <p className="text-sm text-gray-400">
+            {isConnecting ? "Connecting..." : "Preparing room..."}
           </p>
         </div>
       )}
 
-      {statusMessage ? (
-        <p className="text-sm font-medium text-emerald-300" role="status">
-          {statusMessage}
-        </p>
-      ) : null}
-      {error ? (
-        <p className="text-sm font-medium text-rose-300" role="alert">
-          {error}
-        </p>
-      ) : null}
-    </section>
+      {/* STATUS */}
+      {statusMessage && (
+        <p className="text-sm text-emerald-300">{statusMessage}</p>
+      )}
+
+      {error && <p className="text-sm text-red-400">{error}</p>}
+    </div>
   );
 }
