@@ -278,10 +278,10 @@ export default function LiveKitRoomClient() {
                   <button
                     type="button"
                     onClick={stopRecording}
-                    disabled={recordingState === "stopping"}
+                    disabled={recordingState === "stopping" as RecordingState}
                     className="rounded-lg border border-amber-300/60 px-4 py-2 text-sm font-semibold text-amber-200 hover:bg-amber-900/30 hover:text-white disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    {recordingState === "stopping" ? "Stopping..." : "Stop Recording"}
+                    {recordingState === "stopping" as RecordingState ? "Stopping..." : "Stop Recording"}
                   </button>
                 )}
                 <button
