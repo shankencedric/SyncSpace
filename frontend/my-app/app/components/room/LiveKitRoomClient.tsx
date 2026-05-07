@@ -1,45 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  LiveKitRoom,
-  RoomAudioRenderer,
-  useParticipants,
-  VideoTrack,
-} from "@livekit/components-react";
-import { Track } from "livekit-client";
+import { LiveKitRoom, RoomAudioRenderer, VideoConference } from "@livekit/components-react";
 import { getLiveKitToken } from "@/actions/meeting-actions";
 
-/* ---------------- ROOM GRID ---------------- */
-
-function RoomGrid() {
-  const participants = useParticipants();
-
-  return (
-    <div className="grid h-full grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {participants.map((p) => (
-        <div
-          key={p.identity}
-          className="relative overflow-hidden rounded-xl border border-(--border-base) bg-black"
-        >
-          {/* VIDEO */}
-          <VideoTrack
-            participant={p}
-            source={Track.Source.Camera}
-            className="h-full w-full object-cover"
-          />
-
-          {/* NAME TAG */}
-          <div className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-1 text-xs text-white">
-            {p.name || p.identity}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ---------------- MAIN COMPONENT ---------------- */
+// CRITICAL FIX: This imports the pre-built CSS for grids, name tags, and buttons.
+import "@livekit/components-styles";
 
 type LiveKitRoomClientProps = {
   currentUserName: string;
@@ -59,120 +25,150 @@ export default function LiveKitRoomClient({
 
   const liveKitUrl = useMemo(
     () => (process.env.NEXT_PUBLIC_LIVEKIT_URL ?? "").trim(),
-    [],
+    []
   );
 
   const leaveRoom = () => {
     setToken(null);
+    setStatusMessage("Disconnected from room.");
     setError(null);
-    setStatusMessage("Disconnected.");
     onLeave();
   };
 
   useEffect(() => {
-    if (!activeRoomName) {
+    if (activeRoomName === null) {
       setToken(null);
-      setStatusMessage("Select a room to join.");
+      setError(null);
+      setStatusMessage("Select a teammate to join their workspace.");
       return;
     }
 
-    let cancelled = false;
+    const roomName = activeRoomName;
+    let isCancelled = false;
 
-    async function connect() {
+    async function connectToActiveRoom(room: string, participantName: string) {
+      if (!liveKitUrl) {
+        setError("Missing NEXT_PUBLIC_LIVEKIT_URL in env.local.");
+        return;
+      }
+
       setIsConnecting(true);
       setError(null);
-      setStatusMessage(`Joining ${activeRoomName}...`);
+      setStatusMessage(`Connecting to ${room}...`);
 
       try {
-        const { token } = await getLiveKitToken(
-          activeRoomName,
-          currentUserName,
-        );
-
-        if (!cancelled) {
-          setToken(token);
-          setStatusMessage(`Connected as ${currentUserName}`);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError("Failed to connect to room.");
-          setToken(null);
-        }
+        const payload = await getLiveKitToken(room, participantName);
+        if (isCancelled) return;
+        
+        setToken(payload.token);
+        setStatusMessage(`Connected as ${participantName} in ${room}.`);
+      } catch (connectError) {
+        if (isCancelled) return;
+        const message =
+          connectError instanceof Error ? connectError.message : "Could not connect to LiveKit.";
+        setError(message);
+        setStatusMessage(null);
+        setToken(null);
       } finally {
-        if (!cancelled) setIsConnecting(false);
+        if (!isCancelled) {
+          setIsConnecting(false);
+        }
       }
     }
 
-    connect();
+    void connectToActiveRoom(roomName, currentUserName);
 
     return () => {
-      cancelled = true;
+      isCancelled = true;
     };
-  }, [activeRoomName, currentUserName]);
+  }, [activeRoomName, currentUserName, liveKitUrl]);
 
-  /* ---------------- UI ---------------- */
-
+  // Removed the empty box placeholder. If no room, just render nothing, 
+  // or a very sleek prompt depending on your layout.
   if (!activeRoomName) {
-    return (
-      <div className="flex h-[60vh] items-center justify-center rounded-2xl border border-(--border-base)">
-        <p className="text-sm text-gray-400">
-          Choose a room to join a live session
-        </p>
-      </div>
-    );
+    return null; 
   }
 
   return (
-    <div className="space-y-4">
-
-      {/* HEADER */}
-      <div className="flex items-center justify-between rounded-xl border border-(--border-base) p-4">
-        <div>
-          <p className="text-xs text-gray-400">Active Room</p>
-          <p className="text-lg font-semibold text-white">
+    <section className="flex flex-col w-full h-full space-y-4">
+      {/* Header / Controls */}
+      <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-[rgba(15,23,42,0.45)] border border-(--border-base) shadow-sm">
+        <div className="flex flex-col">
+          <p className="text-xs uppercase tracking-wider text-(--text-secondary) font-semibold">
+            Active Workspace
+          </p>
+          <p className="text-lg font-bold text-white tracking-tight">
             {activeRoomName}
           </p>
         </div>
-
         <button
+          type="button"
           onClick={leaveRoom}
-          className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+          className="rounded-lg bg-rose-500/10 border border-rose-500/20 px-5 py-2 text-sm font-semibold text-rose-400 transition-colors hover:bg-rose-500 hover:text-white"
         >
-          Leave Room
+          Leave Workspace
         </button>
       </div>
 
-      {/* CONTENT */}
+      {/* Video Grid Area */}
       {token ? (
-        <div className="h-[75vh] overflow-hidden rounded-2xl border border-(--border-base) bg-black">
+        // Added a dark background and specific height setup so the LiveKit grid can expand
+        <div className="flex-1 w-full min-h-[70vh] overflow-hidden rounded-2xl border border-(--border-base) bg-[#0a0a0a] shadow-2xl relative">
           <LiveKitRoom
             token={token}
             serverUrl={liveKitUrl}
-            connect
-            video
-            audio
-            className="h-full"
-            onDisconnected={leaveRoom}
-            onError={(e) => setError(e.message)}
+            connect={true}
+            video={true}
+            audio={true}
+            data-lk-theme="default" // Applies LiveKit's dark/light standard theme
+            className="flex flex-col w-full h-full"
+            onMediaDeviceFailure={(deviceFailure) => {
+              setError(`Camera/Mic access denied: ${deviceFailure}`);
+            }}
+            onDisconnected={() => {
+              setToken(null);
+              setStatusMessage("Disconnected from room.");
+              onLeave();
+            }}
+            onError={(liveKitError) => {
+              setError(liveKitError.message);
+            }}
           >
-            <RoomGrid />
+            {/* VideoConference automatically handles the grid, speaker spotlight, and control bar */}
+            <VideoConference className="w-full h-full" />
             <RoomAudioRenderer />
           </LiveKitRoom>
         </div>
       ) : (
-        <div className="flex h-[60vh] items-center justify-center rounded-2xl border border-(--border-base)">
-          <p className="text-sm text-gray-400">
-            {isConnecting ? "Connecting..." : "Preparing room..."}
-          </p>
+        // Polished Loading State instead of a basic placeholder
+        <div className="flex-1 w-full min-h-[70vh] flex flex-col items-center justify-center rounded-2xl border border-(--border-base) bg-[rgba(15,23,42,0.45)]">
+          {isConnecting ? (
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-8 h-8 border-4 border-t-(--accent) border-(--border-base) rounded-full animate-spin"></div>
+              <p className="text-sm font-medium text-(--text-secondary) animate-pulse">
+                Establishing secure connection...
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-(--text-secondary)">Preparing workspace...</p>
+          )}
         </div>
       )}
 
-      {/* STATUS */}
-      {statusMessage && (
-        <p className="text-sm text-emerald-300">{statusMessage}</p>
+      {/* Status Toasts */}
+      {(statusMessage || error) && (
+        <div className="flex justify-center mt-2">
+          {error ? (
+            <span className="px-4 py-2 text-sm font-medium rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20">
+              {error}
+            </span>
+          ) : (
+            <span className="px-4 py-2 text-sm font-medium rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              {statusMessage}
+            </span>
+          )}
+        </div>
       )}
-
-      {error && <p className="text-sm text-red-400">{error}</p>}
-    </div>
+    </section>
   );
 }
