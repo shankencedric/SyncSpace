@@ -47,6 +47,11 @@ export default function LiveKitRoomClient({
         return;
       }
 
+      if (!activeRoomName) {
+        setError("Room name is required.");
+        return;
+      }
+
       setIsConnecting(true);
       setError(null);
       setStatusMessage(`Connecting to ${activeRoomName}...`);
