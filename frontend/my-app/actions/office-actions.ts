@@ -172,6 +172,102 @@ export async function getOfficeMembers(
   }))
 }
 
+export type OfficeSpatialUser = {
+  id: string
+  name: string
+}
+
+type OfficeSpatialPayload = {
+  currentUser: OfficeSpatialUser
+  users: OfficeSpatialUser[]
+}
+
+function pickNameFromRecord(record: Record<string, unknown> | undefined): string | null {
+  if (!record) return null
+
+  const candidateKeys = ['full_name', 'name', 'display_name', 'username', 'email']
+  for (const key of candidateKeys) {
+    const value = record[key]
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim()
+    }
+  }
+
+  return null
+}
+
+function pickNameFromMetadata(metadata: unknown): string | null {
+  if (!metadata || typeof metadata !== 'object') {
+    return null
+  }
+
+  const data = metadata as Record<string, unknown>
+  const candidateKeys = ['name', 'full_name', 'display_name', 'username']
+  for (const key of candidateKeys) {
+    const value = data[key]
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim()
+    }
+  }
+
+  return null
+}
+
+export async function getOfficeSpatialUsers(officeId: string): Promise<OfficeSpatialPayload> {
+  const supabase = createClient(await cookies())
+  const authUser = await requireEmployeeOrHigher(supabase, officeId)
+
+  const { data: memberships, error: membershipsError } = await supabase
+    .from('memberships')
+    .select('user_id')
+    .eq('office_id', officeId)
+
+  if (membershipsError) throw membershipsError
+
+  const uniqueUserIds = Array.from(
+    new Set((memberships ?? []).map((membership) => membership.user_id).filter(Boolean)),
+  ) as string[]
+
+  if (!uniqueUserIds.includes(authUser.id)) {
+    uniqueUserIds.push(authUser.id)
+  }
+
+  const { data: users, error: usersError } = await supabase
+    .from('users')
+    .select('*')
+    .in('id', uniqueUserIds)
+
+  if (usersError) throw usersError
+
+  const userById = new Map((users ?? []).map((user) => [String(user.id), user as Record<string, unknown>]))
+  const authMetadataName = pickNameFromMetadata(authUser.user_metadata)
+
+  const currentUserName =
+    authMetadataName ??
+    pickNameFromRecord(userById.get(authUser.id)) ??
+    authUser.email?.split('@')[0] ??
+    'You'
+
+  const usersForCanvas = uniqueUserIds
+    .map((userId) => {
+      const profile = userById.get(userId)
+      const fallbackEmailName =
+        typeof profile?.email === 'string' ? profile.email.split('@')[0] : null
+      const name =
+        userId === authUser.id
+          ? currentUserName
+          : pickNameFromRecord(profile) ?? fallbackEmailName ?? `User ${userId.slice(0, 6)}`
+
+      return { id: userId, name }
+    })
+    .sort((a, b) => a.name.localeCompare(b.name))
+
+  return {
+    currentUser: { id: authUser.id, name: currentUserName },
+    users: usersForCanvas,
+  }
+}
+
 /**
  * Update a member's role within an office.
  *
