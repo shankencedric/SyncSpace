@@ -1,10 +1,15 @@
 /**
- * @returns Vercel url if in env; otherwise the fallback; otherwise `localhost:3000`
+ * @returns Vercel url (automatically injected by Vercel); otherwise the fallback; otherwise `localhost:3000`
  */
 export function getWorkingUrl_Vercel(): string {
-    return process.env.VERCEL_URL 
+    let url = process.env.VERCEL_URL 
         || process.env.VERCEL_URL_FALLBACK 
         || 'http://localhost:3000';
+    
+    if (process.env.VERCEL_URL )    
+        return `https://${url}`;
+    
+    return url;
 }
 
 /**

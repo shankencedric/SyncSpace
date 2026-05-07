@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server' 
 import { cookies } from 'next/headers'
 import { getWorkingUrl_Vercel } from '@/utils/url-helper'
+import { get } from 'http'
 
 export async function login(formData: FormData) {
   const cookieStore = await cookies()
@@ -53,16 +54,12 @@ export async function authWithGoogle() {
   const cookieStore = await cookies()
   const supabase = createClient(cookieStore)
 
-  console.log({
-    VERCEL_URL: process.env.VERCEL_URL,
-    VERCEL_URL_FALLBACK: process.env.VERCEL_URL_FALLBACK,
-    WORKING: getWorkingUrl_Vercel()
-  });
+  const url = getWorkingUrl_Vercel() + '/oauth-callback'
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: getWorkingUrl_Vercel() + `/oauth-callback`, 
+      redirectTo: url, 
     },
   })
 
