@@ -3,8 +3,8 @@
  */
 export function getWorkingUrl_Vercel(): string {
     return process.env.VERCEL_URL 
-        ?? process.env.VERCEL_URL_FALLBACK 
-        ?? 'http://localhost:3000';
+        || process.env.VERCEL_URL_FALLBACK 
+        || 'http://localhost:3000';
 }
 
 /**
@@ -12,6 +12,6 @@ export function getWorkingUrl_Vercel(): string {
  */
 export function getWorkingUrl_LiveKit(): string {
     return process.env.NEXT_PUBLIC_TOKEN_API_URL 
-        ?? process.env.NEXT_PUBLIC_TOKEN_API_URL_FALLBACK 
-        ?? 'http://localhost:8000';
+        || process.env.NEXT_PUBLIC_TOKEN_API_URL_FALLBACK 
+        || 'http://localhost:8000';
 }
