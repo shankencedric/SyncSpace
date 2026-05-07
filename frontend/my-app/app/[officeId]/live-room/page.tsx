@@ -1,5 +1,11 @@
-import LiveKitRoomClient from "@/app/components/room/LiveKitRoomClient";
+import { redirect } from "next/navigation";
 
-export default function OfficeRoomsPage() {
-  return <LiveKitRoomClient />;
+type OfficeRoomsPageProps = {
+  params: {
+    officeId: string;
+  };
+};
+
+export default function OfficeRoomsPage({ params }: OfficeRoomsPageProps) {
+  redirect(`/${params.officeId}/room`);
 }
