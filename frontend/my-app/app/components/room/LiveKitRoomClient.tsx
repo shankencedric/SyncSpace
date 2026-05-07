@@ -33,15 +33,17 @@ export default function LiveKitRoomClient({
   };
 
   useEffect(() => {
-    if (!activeRoomName) {
+    if (activeRoomName === null) {
       setToken(null);
       setError(null);
       setStatusMessage("Select an avatar to join a bubble room.");
       return;
     }
+
+    const roomName = activeRoomName;
     let isCancelled = false;
 
-    async function connectToActiveRoom() {
+    async function connectToActiveRoom(room: string, participantName: string) {
       if (!liveKitUrl) {
         setError("Missing NEXT_PUBLIC_LIVEKIT_URL in env.local.");
         return;
@@ -54,15 +56,15 @@ export default function LiveKitRoomClient({
 
       setIsConnecting(true);
       setError(null);
-      setStatusMessage(`Connecting to ${activeRoomName}...`);
+      setStatusMessage(`Connecting to ${room}...`);
 
       try {
-        const payload = await getLiveKitToken(activeRoomName, currentUserName);
+        const payload = await getLiveKitToken(room, participantName);
         if (isCancelled) {
           return;
         }
         setToken(payload.token);
-        setStatusMessage(`Connected as ${currentUserName} in ${activeRoomName}.`);
+        setStatusMessage(`Connected as ${participantName} in ${room}.`);
       } catch (connectError) {
         if (isCancelled) {
           return;
@@ -79,7 +81,7 @@ export default function LiveKitRoomClient({
       }
     }
 
-    void connectToActiveRoom();
+    void connectToActiveRoom(roomName, currentUserName);
 
     return () => {
       isCancelled = true;
